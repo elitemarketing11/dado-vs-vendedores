@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reto de Premios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0510;
+    --panel: #150a24;
+    --panel-light: #1c0f30;
+    --purple: #a855f7;
+    --purple-dim: #5b2a8c;
+    --fire: #ff6a1a;
+    --fire-dim: #8a3400;
+    --red: #ff2e4d;
+    --green: #39ff6a;
+    --yellow: #ffd60a;
+    --text: #f2eaff;
+    --muted: #8a82ad;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(0deg, rgba(168,85,247,0.04) 0px, rgba(168,85,247,0.04) 1px, transparent 1px, transparent 3px),
+      radial-gradient(circle at 20% 0%, rgba(255,106,26,0.12) 0%, transparent 45%),
+      radial-gradient(circle at 80% 10%, rgba(168,85,247,0.18) 0%, transparent 50%),
+      radial-gradient(circle at 50% 20%, #241238 0%, var(--bg) 65%);
+    color: var(--text);
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    min-height: 100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 20px;
+  }
+  .pixel{ font-family: 'Press Start 2P', monospace; }
+
+  .game-container{
+    width:100%;
+    max-width: 460px;
+    background: var(--panel);
+    border: 3px solid var(--purple);
+    border-radius: 4px;
+    box-shadow: 0 0 0 4px #0a0510, 0 0 30px rgba(168,85,247,0.4), 0 0 60px rgba(255,106,26,0.12), inset 0 0 40px rgba(168,85,247,0.06);
+    overflow:hidden;
+    position:relative;
+  }
+  .game-container::before{
+    content:"";
+    position:absolute;
+    top:0; left:0; right:0;
+    height:3px;
+    background: linear-gradient(90deg, var(--purple), var(--fire), var(--purple));
+    background-size: 200% 100%;
+    animation: energyFlow 3s linear infinite;
+  }
+  @keyframes energyFlow{ 0%{ background-position:0% 0; } 100%{ background-position:200% 0; } }
+  .screen{
+    display:none;
+    padding: 34px 22px;
+    text-align:center;
+    animation: fadeIn .35s ease;
+  }
+  .screen.active{display:block;}
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  h1{
+    font-size: 18px;
+    letter-spacing: 1px;
+    color: var(--yellow);
+    text-transform: uppercase;
+    text-shadow: 0 0 8px rgba(255,214,10,0.7), 0 0 18px rgba(255,214,10,0.4), 0 0 30px rgba(168,85,247,0.3);
+    margin-bottom: 14px;
+    line-height: 1.6;
+  }
+  p.subtitle{
+    color: var(--muted);
+    margin-bottom: 22px;
+    font-size: 19px;
+    line-height: 1.4;
+  }
+
+  input[type="email"]{
+    width:100%;
+    padding: 14px;
+    border-radius: 2px;
+    border: 2px solid #262a52;
+    background:#080a1c;
+    color: var(--text);
+    font-size: 18px;
+    font-family: 'VT323', monospace;
+    margin-bottom: 18px;
+  }
+  input[type="email"]:focus{ outline:none; border-color: var(--purple); box-shadow: 0 0 10px rgba(168,85,247,0.4); }
+  input[type="email"]::placeholder{ color: #4a5080; }
+
+  .btn{
+    width:100%;
+    padding: 14px 10px;
+    border-radius: 2px;
+    border: 2px solid #8a3400;
+    background: linear-gradient(180deg, var(--fire), #b34600);
+    color: #fff;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor:pointer;
+    box-shadow: 0 4px 0 #8a3400;
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .btn:hover:not(:disabled){ filter: brightness(1.12); }
+  .btn:active:not(:disabled){ transform: translateY(4px); box-shadow: 0 0 0 #8a3400; }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn.secondary{
+    background: var(--panel-light);
+    border: 2px solid var(--purple);
+    color: var(--purple);
+    box-shadow: 0 4px 0 var(--purple-dim);
+    margin-top: 14px;
+  }
+  .btn.gold{
+    background: var(--yellow);
+    color: #2a1d00;
+    border: 2px solid #8a6b00;
+    box-shadow: 0 4px 0 #8a6b00;
+  }
+
+  .error-msg{
+    color: var(--red);
+    font-size: 16px;
+    margin-top: 8px;
+    display:none;
+  }
+
+  /* --- Selección de oponente --- */
+  .vendors{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 10px;
+    max-height: 480px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .vendor-card{
+    background:#080a1c;
+    border: 2px solid #262a52;
+    border-radius: 4px;
+    padding: 8px 8px 12px;
+    cursor:pointer;
+    transition: border-color .12s ease, transform .12s ease;
+  }
+  .vendor-card:hover{ border-color: var(--purple); transform: translateY(-2px); }
+  .vendor-card.selected{ border-color: var(--fire); box-shadow: 0 0 16px rgba(255,106,26,0.6); }
+  .vendor-avatar{
+    width:100%;
+    aspect-ratio: 3 / 4;
+    border-radius:4px;
+    margin: 0 0 10px;
+    background: linear-gradient(135deg, #1a1e40, #080a1c);
+    border: 2px solid var(--yellow);
+    overflow: hidden;
+  }
+  .vendor-avatar img{
+    width:100%; height:100%;
+    object-fit: cover;
+    display:block;
+  }
+  .vendor-name{ font-family:'Press Start 2P', monospace; font-size:9px; text-transform:uppercase; letter-spacing:.5px; line-height:1.4; }
+
+  /* --- Pantalla VS / tirar dado --- */
+  .vs-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 16px;
+    margin: 22px 0 32px;
+  }
+  .fighter{ display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .fighter .vendor-avatar{ width:84px; height:84px; aspect-ratio:auto; font-size:34px; border-width:3px; }
+  .fighter:first-child .vendor-avatar{ border-color: var(--purple); box-shadow: 0 0 14px rgba(168,85,247,0.6); }
+  .fighter:last-child .vendor-avatar{ border-color: var(--fire); box-shadow: 0 0 14px rgba(255,106,26,0.6); }
+  .vs-text{
+    font-family:'Press Start 2P', monospace;
+    font-size: 20px;
+    color: var(--fire);
+    text-shadow: 0 0 10px rgba(255,106,26,0.8), 0 0 22px rgba(168,85,247,0.5);
+    animation: pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.15); } }
+  .fighter-label{ font-family:'Press Start 2P', monospace; font-size:9px; color:var(--muted); letter-spacing:.5px; }
+
+  /* --- Dados con puntos (pip dice) --- */
+  .dice-row{
+    display:flex;
+    justify-content:center;
+    gap: 34px;
+    margin: 24px 0 14px;
+  }
+  .dice-cell{ display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .die-face{
+    width: 74px; height:74px;
+    display:grid;
+    grid-template-columns: repeat(3,1fr);
+    grid-template-rows: repeat(3,1fr);
+    gap: 4px;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.5);
+  }
+  .die-face.mine{ background:#f3e9ff; border:3px solid var(--purple); }
+  .die-face.theirs{ background:#2a1508; border:3px solid var(--fire); }
+  .pip{ border-radius:50%; background:transparent; }
+  .die-face.mine .pip.on{ background:#2a0e4d; }
+  .die-face.theirs .pip.on{ background:var(--fire); box-shadow:0 0 6px var(--fire); }
+  .die-face.rolling{ animation: roll .12s linear infinite; }
+  @keyframes roll{
+    0%{ transform: rotate(0deg) scale(1); }
+    50%{ transform: rotate(12deg) scale(1.06); }
+    100%{ transform: rotate(-8deg) scale(1); }
+  }
+  .dice-label{ font-family:'Press Start 2P', monospace; font-size:9px; color:var(--muted); }
+
+  .loading{
+    font-size:16px;
+    color: var(--muted);
+    margin-top:12px;
+  }
+
+  /* --- Resultado --- */
+  .result-title{
+    font-family:'Press Start 2P', monospace;
+    font-size: 15px;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+  .stat-box{
+    background:#080a1c;
+    border: 2px solid #262a52;
+    border-radius: 4px;
+    padding: 14px;
+    margin-bottom: 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 14px;
+  }
+  .stat-box.mine{ border-color: var(--purple); box-shadow: 0 0 10px rgba(168,85,247,0.3); }
+  .stat-box.theirs{ border-color: var(--fire); box-shadow: 0 0 10px rgba(255,106,26,0.3); }
+  .stat-label{
+    font-family:'Press Start 2P', monospace;
+    font-size: 10px;
+    text-align:left;
+    line-height:1.6;
+  }
+  .stat-box.mine .stat-label{ color: var(--purple); }
+  .stat-box.theirs .stat-label{ color: var(--fire); }
+
+  .outcome-banner{
+    font-family:'Press Start 2P', monospace;
+    font-size: 14px;
+    margin: 18px 0 10px;
+    letter-spacing: .5px;
+  }
+  .outcome-banner.win{ color: var(--green); text-shadow: 0 0 10px rgba(57,255,106,0.7), 0 0 22px rgba(57,255,106,0.4); }
+  .outcome-banner.lose{ color: var(--muted); }
+
+  .prize-box{
+    background:#080a1c;
+    border: 2px dashed var(--yellow);
+    border-radius: 4px;
+    padding: 16px;
+    margin: 14px 0;
+    animation: fadeIn .35s ease;
+  }
+  .code{
+    font-family:'Press Start 2P', monospace;
+    font-size: 16px;
+    letter-spacing: 2px;
+    color: var(--yellow);
+    margin-top: 10px;
+    user-select: all;
+    word-break: break-all;
+  }
+  .expiry{ font-size:15px; color:var(--muted); margin-top:8px; }
+</style>
+</head>
+<body>
+
+<div class="game-container">
+
+  <!-- PANTALLA 1: correo -->
+  <div class="screen active" id="screen-email">
+    <h1 class="pixel">Reto de Premios</h1>
+    <p class="subtitle">Ingresa tu correo para retar a un vendedor. Si le ganas al dado, te llevas un producto gratis.</p>
+    <input type="email" id="email-input" placeholder="tu@correo.com" autocomplete="email">
+    <button class="btn" id="btn-continue">Continuar</button>
+    <div class="error-msg" id="email-error"></div>
+  </div>
+
+  <!-- PANTALLA 2: elegir oponente -->
+  <div class="screen" id="screen-vendor">
+    <h1 class="pixel">Elige tu Oponente</h1>
+    <p class="subtitle">Selecciona contra quién vas a jugar</p>
+    <div class="vendors" id="vendor-list"></div>
+    <button class="btn" id="btn-fight" disabled>¡A Jugar!</button>
+  </div>
+
+  <!-- PANTALLA 3: tirar dado -->
+  <div class="screen" id="screen-roll">
+    <h1 class="pixel">¡Prepárate!</h1>
+    <div class="vs-row">
+      <div class="fighter">
+        <div class="vendor-avatar">🧑</div>
+        <div class="fighter-label">Tú</div>
+      </div>
+      <div class="vs-text">VS</div>
+      <div class="fighter">
+        <div class="vendor-avatar" id="opponent-avatar">🥋</div>
+        <div class="fighter-label" id="opponent-name-label">Oponente</div>
+      </div>
+    </div>
+    <button class="btn" id="btn-roll">Tirar el Dado</button>
+  </div>
+
+  <!-- PANTALLA 4: animación -->
+  <div class="screen" id="screen-animation">
+    <h1 class="pixel">Rodando...</h1>
+    <div class="dice-row">
+      <div class="dice-cell">
+        <div class="die-face mine rolling" id="dice-player"></div>
+        <div class="dice-label">Tú</div>
+      </div>
+      <div class="dice-cell">
+        <div class="die-face theirs rolling" id="dice-opponent"></div>
+        <div class="dice-label" id="dice-opponent-label">Oponente</div>
+      </div>
+    </div>
+    <div class="loading">Calculando resultado...</div>
+  </div>
+
+  <!-- PANTALLA 5: resultado -->
+  <div class="screen" id="screen-result">
+    <h1 class="pixel">Resultado</h1>
+    <div id="result-content"></div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // ============================================================
+  // CONFIGURACIÓN — edita esto con tus datos reales
+  // ============================================================
+  const CONFIG = {
+    apiUrl: "https://anlahifkfaaquplzqxuk.supabase.co/functions/v1/jugar",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFubGFoaWZrZmFhcXVwbHpxeHVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NjA3MjYsImV4cCI6MjEwMTMzNjcyNn0.LsPl1XWMfD3LnayOiixcF2NrngWqi41rQ5thrW_sYZo",
+    storeUrl: "https://naturalshopcol.com",
+    // Imágenes en la carpeta "images/" junto a este index.html (ver SETUP.md)
+    vendors: [
+      { id: "aleja", name: "Aleja", avatar: "images/aleja.jpg" },
+      { id: "carolina", name: "Carolina", avatar: "images/carolina.jpg" },
+      { id: "guillermofit", name: "Guillermo", avatar: "images/guillermofit.jpg" },
+      { id: "jeremi", name: "Jeremi", avatar: "images/jeremi.jpg" },
+      { id: "juan-camilo", name: "Juan Camilo", avatar: "images/juan-camilo.jpg" },
+      { id: "leli", name: "Leli", avatar: "images/leli.jpg" },
+      { id: "mariapaula", name: "Maria Paula", avatar: "images/mariapaula.jpg" },
+      { id: "nailen", name: "Nailen", avatar: "images/nailen.jpg" },
+      { id: "nanis", name: "Nanis", avatar: "images/nanis.jpg" },
+      { id: "sara", name: "Sara", avatar: "images/sara.jpg" }
+    ]
+  };
+
+  // ============================================================
+  // Estado
+  // ============================================================
+  let selectedVendor = null;
+  let playerEmail = null;
+
+  // ============================================================
+  // Referencias
+  // ============================================================
+  const screens = {
+    email: document.getElementById('screen-email'),
+    vendor: document.getElementById('screen-vendor'),
+    roll: document.getElementById('screen-roll'),
+    animation: document.getElementById('screen-animation'),
+    result: document.getElementById('screen-result'),
+  };
+
+  function showScreen(name){
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[name].classList.add('active');
+  }
+
+  // ============================================================
+  // Dado con puntos (pip dice)
+  // ============================================================
+  const DIE_PATTERNS = {
+    1: [5],
+    2: [1,9],
+    3: [1,5,9],
+    4: [1,3,7,9],
+    5: [1,3,5,7,9],
+    6: [1,3,4,6,7,9]
+  };
+  function dieFaceInnerHTML(value){
+    const active = new Set(DIE_PATTERNS[value] || []);
+    let dots = '';
+    for(let i=1;i<=9;i++){
+      dots += `<span class="pip ${active.has(i) ? 'on' : ''}"></span>`;
+    }
+    return dots;
+  }
+  function setDie(el, value){
+    el.innerHTML = dieFaceInnerHTML(value);
+  }
+
+  // ============================================================
+  // PANTALLA 1: correo
+  // ============================================================
+  const emailInput = document.getElementById('email-input');
+  const emailError = document.getElementById('email-error');
+
+  document.getElementById('btn-continue').addEventListener('click', () => {
+    const value = emailInput.value.trim();
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    if(!isValid){
+      emailError.textContent = "Ingresa un correo válido.";
+      emailError.style.display = "block";
+      return;
+    }
+    emailError.style.display = "none";
+    playerEmail = value;
+    renderVendors();
+    showScreen('vendor');
+  });
+
+  // ============================================================
+  // PANTALLA 2: elegir oponente
+  // ============================================================
+  function renderVendors(){
+    const list = document.getElementById('vendor-list');
+    list.innerHTML = "";
+    CONFIG.vendors.forEach(v => {
+      const card = document.createElement('div');
+      card.className = "vendor-card";
+      card.dataset.id = v.id;
+      card.innerHTML = `
+        <div class="vendor-avatar"><img src="${v.avatar}" alt="${escapeHtml(v.name)}"></div>
+        <div class="vendor-name">${escapeHtml(v.name)}</div>
+      `;
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.vendor-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedVendor = v;
+        document.getElementById('btn-fight').disabled = false;
+      });
+      list.appendChild(card);
+    });
+  }
+
+  document.getElementById('btn-fight').addEventListener('click', () => {
+    if(!selectedVendor) return;
+    document.getElementById('opponent-avatar').innerHTML = `<img src="${selectedVendor.avatar}" alt="${escapeHtml(selectedVendor.name)}">`;
+    document.getElementById('opponent-name-label').textContent = selectedVendor.name;
+    showScreen('roll');
+  });
+
+  // ============================================================
+  // PANTALLA 3 -> 4: tirar el dado y llamar al backend
+  // ============================================================
+  document.getElementById('btn-roll').addEventListener('click', async () => {
+    document.getElementById('dice-opponent-label').textContent = selectedVendor.name;
+    showScreen('animation');
+    startDiceAnimation();
+
+    try {
+      const res = await fetch(CONFIG.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + CONFIG.anonKey,
+          'apikey': CONFIG.anonKey
+        },
+        body: JSON.stringify({ email: playerEmail, vendor_id: selectedVendor.id })
+      });
+      const data = await res.json();
+
+      // Espera mínima para que se vea la animación aunque el backend responda rápido
+      setTimeout(() => {
+        stopDiceAnimation();
+        if(!res.ok){
+          handleError(data.error);
+          return;
+        }
+        // Fija los dados en números 1-6 consistentes con el resultado real
+        const roll = rollConsistentDice(data.won);
+        setDie(document.getElementById('dice-player'), roll.player);
+        setDie(document.getElementById('dice-opponent'), roll.opponent);
+
+        // Pausa breve para que el jugador vea los dados quietos antes del resultado
+        setTimeout(() => showResult(data, roll), 1100);
+      }, 1800);
+
+    } catch (err) {
+      setTimeout(() => {
+        stopDiceAnimation();
+        handleError('network_error');
+      }, 1000);
+    }
+  });
+
+  let diceInterval = null;
+  function startDiceAnimation(){
+    const dp = document.getElementById('dice-player');
+    const dop = document.getElementById('dice-opponent');
+    setDie(dp, 1 + Math.floor(Math.random()*6));
+    setDie(dop, 1 + Math.floor(Math.random()*6));
+    diceInterval = setInterval(() => {
+      setDie(dp, 1 + Math.floor(Math.random()*6));
+      setDie(dop, 1 + Math.floor(Math.random()*6));
+    }, 100);
+  }
+  function stopDiceAnimation(){
+    clearInterval(diceInterval);
+    document.getElementById('dice-player').classList.remove('rolling');
+    document.getElementById('dice-opponent').classList.remove('rolling');
+  }
+
+  // Genera un par de números de dado (1-6) coherente con el resultado real:
+  // si ganó, jugador > oponente; si perdió, jugador <= oponente.
+  function rollConsistentDice(won){
+    let player, opponent, attempts = 0;
+    do {
+      player = 1 + Math.floor(Math.random() * 6);
+      opponent = 1 + Math.floor(Math.random() * 6);
+      attempts++;
+    } while (attempts < 50 && (won ? player <= opponent : player > opponent));
+    return { player, opponent };
+  }
+
+  // ============================================================
+  // PANTALLA 5: resultado
+  // ============================================================
+  function showResult(data, roll){
+    const container = document.getElementById('result-content');
+
+    const statsHTML = `
+      <div class="stat-box mine">
+        <div class="stat-label">🔷 Tu número:</div>
+        <div class="die-face mine">${dieFaceInnerHTML(roll.player)}</div>
+      </div>
+      <div class="stat-box theirs">
+        <div class="stat-label">🔴 Número del<br>oponente:</div>
+        <div class="die-face theirs">${dieFaceInnerHTML(roll.opponent)}</div>
+      </div>
+    `;
+
+    if(data.won){
+      container.innerHTML = `
+        ${statsHTML}
+        <div class="outcome-banner win">¡FELICIDADES<br>GANASTE!</div>
+        <button class="btn gold" id="btn-reveal">Descubre tu Premio</button>
+        <div class="prize-box" id="prize-box" style="display:none;">
+          <div style="font-family:'Press Start 2P',monospace; font-size:11px; color:var(--muted);">TU PREMIO</div>
+          <div style="font-weight:bold; margin-top:6px; font-size:19px;">${escapeHtml(data.product || '')}</div>
+          <div class="code">${escapeHtml(data.code || '')}</div>
+          <div class="expiry">Válido por ${escapeHtml(String(data.validity_days ?? ''))} días. Aplica solo al producto indicado, envío no incluido.</div>
+        </div>
+        <button class="btn secondary" id="btn-restart" style="display:none;">Volver a la Página</button>
+      `;
+      document.getElementById('btn-reveal').addEventListener('click', () => {
+        document.getElementById('prize-box').style.display = 'block';
+        document.getElementById('btn-reveal').style.display = 'none';
+        document.getElementById('btn-restart').style.display = 'block';
+      });
+      document.getElementById('btn-restart').addEventListener('click', () => {
+        window.location.href = CONFIG.storeUrl;
+      });
+    } else {
+      container.innerHTML = `
+        ${statsHTML}
+        <div class="outcome-banner lose">NO GANASTE ESTA VEZ</div>
+        <p class="subtitle">${escapeHtml(selectedVendor.name)} te ganó el dado. ¡Sigue explorando nuestros productos!</p>
+        <button class="btn secondary" id="btn-restart">Volver a la Página</button>
+      `;
+      document.getElementById('btn-restart').addEventListener('click', () => {
+        window.location.href = CONFIG.storeUrl;
+      });
+    }
+    showScreen('result');
+  }
+
+  function handleError(code){
+    const container = document.getElementById('result-content');
+    let msg = "Ocurrió un error, intenta de nuevo más tarde.";
+    if(code === 'already_played') msg = "Este correo ya participó en el reto. Solo se permite un intento por persona.";
+    if(code === 'prizes_exhausted') msg = "Por ahora se agotaron los premios disponibles. ¡Vuelve a intentarlo más tarde!";
+    container.innerHTML = `
+      <div class="outcome-banner lose">UPS</div>
+      <p class="subtitle">${msg}</p>
+      <button class="btn secondary" id="btn-restart">Volver a la Página</button>
+    `;
+    document.getElementById('btn-restart').addEventListener('click', () => {
+      window.location.href = CONFIG.storeUrl;
+    });
+    showScreen('result');
+  }
+
+  // ============================================================
+  // Utilidades
+  // ============================================================
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+})();
+</script>
+
+</body>
+</html>
