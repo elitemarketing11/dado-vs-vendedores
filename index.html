@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reto de Premios</title>
+<style>
+  :root{
+    --bg: #0a0a0f;
+    --panel: #16161f;
+    --gold: #d4af37;
+    --red: #c81e2c;
+    --text: #f2f2f2;
+    --muted: #9a9aa5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background: radial-gradient(circle at 50% 20%, #1c1c28 0%, var(--bg) 70%);
+    color: var(--text);
+    font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
+    min-height: 100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 20px;
+  }
+  .game-container{
+    width:100%;
+    max-width: 480px;
+    background: var(--panel);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    box-shadow: 0 0 40px rgba(212,175,55,0.25);
+    overflow:hidden;
+    position:relative;
+  }
+  .screen{
+    display:none;
+    padding: 32px 24px;
+    text-align:center;
+    animation: fadeIn .4s ease;
+  }
+  .screen.active{display:block;}
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  h1{
+    font-size: 26px;
+    letter-spacing: 2px;
+    color: var(--gold);
+    text-transform: uppercase;
+    text-shadow: 0 0 12px rgba(212,175,55,0.5);
+    margin-bottom: 8px;
+  }
+  p.subtitle{ color: var(--muted); margin-bottom: 24px; font-family: Arial, sans-serif; font-weight:normal; font-size:14px;}
+
+  input[type="email"]{
+    width:100%;
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background:#0e0e15;
+    color: var(--text);
+    font-size: 15px;
+    margin-bottom: 16px;
+    font-family: Arial, sans-serif;
+  }
+  input[type="email"]:focus{ outline:none; border-color: var(--gold); }
+
+  .btn{
+    width:100%;
+    padding: 14px;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(180deg, var(--red), #8f1420);
+    color: #fff;
+    font-weight:bold;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover{ transform: translateY(-2px); box-shadow: 0 6px 18px rgba(200,30,44,0.4); }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+  .btn.secondary{
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    margin-top: 12px;
+  }
+
+  .error-msg{
+    color: #ff6b6b;
+    font-size: 13px;
+    margin-top: 8px;
+    font-family: Arial, sans-serif;
+    display:none;
+  }
+
+  /* --- Selección de oponente --- */
+  .vendors{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .vendor-card{
+    background:#0e0e15;
+    border: 2px solid #2a2a35;
+    border-radius: 10px;
+    padding: 16px 8px;
+    cursor:pointer;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .vendor-card:hover{ border-color: var(--gold); transform: translateY(-2px); }
+  .vendor-card.selected{ border-color: var(--red); box-shadow: 0 0 16px rgba(200,30,44,0.5); }
+  .vendor-avatar{
+    width:64px; height:64px;
+    border-radius:50%;
+    margin: 0 auto 10px;
+    background: linear-gradient(135deg, #333, #111);
+    display:flex; align-items:center; justify-content:center;
+    font-size: 26px;
+    border: 2px solid var(--gold);
+  }
+  .vendor-name{ font-size:13px; text-transform:uppercase; letter-spacing:.5px; }
+
+  /* --- Pantalla VS / tirar dado --- */
+  .vs-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 20px;
+    margin: 20px 0 30px;
+  }
+  .fighter{
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+  }
+  .fighter .vendor-avatar{ width:80px; height:80px; font-size:32px; }
+  .vs-text{
+    font-size: 22px;
+    color: var(--red);
+    font-style: italic;
+  }
+  .fighter-label{ font-size:12px; color:var(--muted); font-family:Arial, sans-serif; }
+
+  /* --- Animación de dados --- */
+  .dice-row{
+    display:flex;
+    justify-content:center;
+    gap: 40px;
+    margin: 24px 0;
+  }
+  .dice{
+    width: 64px; height:64px;
+    background: #f2f2f2;
+    border-radius: 12px;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 30px;
+    font-weight:bold;
+    color: #0a0a0f;
+    box-shadow: 0 4px 12px rgba(0,0,0,.4);
+  }
+  .dice.rolling{ animation: roll .15s linear infinite; }
+  @keyframes roll{
+    0%{ transform: rotate(0deg) scale(1); }
+    50%{ transform: rotate(180deg) scale(1.05); }
+    100%{ transform: rotate(360deg) scale(1); }
+  }
+  .dice-label{ font-size:11px; color:var(--muted); margin-top:6px; font-family:Arial, sans-serif; }
+
+  /* --- Resultado --- */
+  .result-title{
+    font-size: 30px;
+    margin-bottom: 12px;
+  }
+  .result-title.win{ color: var(--gold); text-shadow: 0 0 16px rgba(212,175,55,.6); }
+  .result-title.lose{ color: var(--muted); }
+  .prize-box{
+    background:#0e0e15;
+    border: 1px dashed var(--gold);
+    border-radius: 10px;
+    padding: 16px;
+    margin: 16px 0;
+    font-family: Arial, sans-serif;
+  }
+  .code{
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    font-weight:bold;
+    margin-top: 8px;
+    user-select: all;
+  }
+  .expiry{ font-size:12px; color:var(--muted); margin-top:6px; }
+
+  .loading{
+    font-size:13px;
+    color: var(--muted);
+    font-family: Arial, sans-serif;
+    margin-top:10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="game-container">
+
+  <!-- PANTALLA 1: correo -->
+  <div class="screen active" id="screen-email">
+    <h1>Reto de Premios</h1>
+    <p class="subtitle">Ingresa tu correo para retar a un vendedor. Si le ganas al dado, te llevas un producto gratis.</p>
+    <input type="email" id="email-input" placeholder="tu@correo.com" autocomplete="email">
+    <button class="btn" id="btn-continue">Continuar</button>
+    <div class="error-msg" id="email-error"></div>
+  </div>
+
+  <!-- PANTALLA 2: elegir oponente -->
+  <div class="screen" id="screen-vendor">
+    <h1>Elige tu Oponente</h1>
+    <p class="subtitle">Selecciona contra quién vas a jugar</p>
+    <div class="vendors" id="vendor-list"></div>
+    <button class="btn" id="btn-fight" disabled>¡A Jugar!</button>
+  </div>
+
+  <!-- PANTALLA 3: tirar dado -->
+  <div class="screen" id="screen-roll">
+    <h1>¡Prepárate!</h1>
+    <div class="vs-row">
+      <div class="fighter">
+        <div class="vendor-avatar">🧑</div>
+        <div class="fighter-label">Tú</div>
+      </div>
+      <div class="vs-text">VS</div>
+      <div class="fighter">
+        <div class="vendor-avatar" id="opponent-avatar">🥋</div>
+        <div class="fighter-label" id="opponent-name-label">Oponente</div>
+      </div>
+    </div>
+    <button class="btn" id="btn-roll">Tirar el Dado</button>
+  </div>
+
+  <!-- PANTALLA 4: animación -->
+  <div class="screen" id="screen-animation">
+    <h1>Rodando...</h1>
+    <div class="dice-row">
+      <div>
+        <div class="dice rolling" id="dice-player">?</div>
+        <div class="dice-label">Tú</div>
+      </div>
+      <div>
+        <div class="dice rolling" id="dice-opponent">?</div>
+        <div class="dice-label" id="dice-opponent-label">Oponente</div>
+      </div>
+    </div>
+    <div class="loading" id="roll-status">Calculando resultado...</div>
+  </div>
+
+  <!-- PANTALLA 5: resultado -->
+  <div class="screen" id="screen-result">
+    <div id="result-content"></div>
+    <button class="btn secondary" id="btn-restart">Volver a la página</button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // ============================================================
+  // CONFIGURACIÓN — edita esto con tus datos reales
+  // ============================================================
+  const CONFIG = {
+    // URL de tu Edge Function de Supabase (ver SETUP.md)
+    apiUrl: "https://anlahifkfaaquplzqxuk.supabase.co/functions/v1/jugar",
+
+    // Clave pública "anon" de tu proyecto Supabase (Project Settings > API Keys > anon public)
+    // Es segura de exponer en el frontend, está diseñada para esto.
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFubGFoaWZrZmFhcXVwbHpxeHVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NjA3MjYsImV4cCI6MjEwMTMzNjcyNn0.LsPl1XWMfD3LnayOiixcF2NrngWqi41rQ5thrW_sYZo",
+
+    // A dónde redirigir el botón "Volver a la página"
+    storeUrl: "https://naturalshopcol.com",
+
+    // Vendedores/oponentes — reemplaza con tus datos reales
+    vendors: [
+      { id: "vendor_1", name: "Vendedor 1", avatar: "🥊" },
+      { id: "vendor_2", name: "Vendedor 2", avatar: "🥋" },
+      { id: "vendor_3", name: "Vendedor 3", avatar: "🛡️" },
+      { id: "vendor_4", name: "Vendedor 4", avatar: "⚔️" }
+    ]
+  };
+
+  // ============================================================
+  // Estado
+  // ============================================================
+  let selectedVendor = null;
+  let playerEmail = null;
+
+  // ============================================================
+  // Referencias
+  // ============================================================
+  const screens = {
+    email: document.getElementById('screen-email'),
+    vendor: document.getElementById('screen-vendor'),
+    roll: document.getElementById('screen-roll'),
+    animation: document.getElementById('screen-animation'),
+    result: document.getElementById('screen-result'),
+  };
+
+  function showScreen(name){
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[name].classList.add('active');
+  }
+
+  // ============================================================
+  // PANTALLA 1: correo
+  // ============================================================
+  const emailInput = document.getElementById('email-input');
+  const emailError = document.getElementById('email-error');
+
+  document.getElementById('btn-continue').addEventListener('click', () => {
+    const value = emailInput.value.trim();
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    if(!isValid){
+      emailError.textContent = "Ingresa un correo válido.";
+      emailError.style.display = "block";
+      return;
+    }
+    emailError.style.display = "none";
+    playerEmail = value;
+    renderVendors();
+    showScreen('vendor');
+  });
+
+  // ============================================================
+  // PANTALLA 2: elegir oponente
+  // ============================================================
+  function renderVendors(){
+    const list = document.getElementById('vendor-list');
+    list.innerHTML = "";
+    CONFIG.vendors.forEach(v => {
+      const card = document.createElement('div');
+      card.className = "vendor-card";
+      card.dataset.id = v.id;
+      card.innerHTML = `
+        <div class="vendor-avatar">${v.avatar}</div>
+        <div class="vendor-name">${v.name}</div>
+      `;
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.vendor-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedVendor = v;
+        document.getElementById('btn-fight').disabled = false;
+      });
+      list.appendChild(card);
+    });
+  }
+
+  document.getElementById('btn-fight').addEventListener('click', () => {
+    if(!selectedVendor) return;
+    document.getElementById('opponent-avatar').textContent = selectedVendor.avatar;
+    document.getElementById('opponent-name-label').textContent = selectedVendor.name;
+    showScreen('roll');
+  });
+
+  // ============================================================
+  // PANTALLA 3 -> 4: tirar el dado y llamar al backend
+  // ============================================================
+  document.getElementById('btn-roll').addEventListener('click', async () => {
+    document.getElementById('dice-opponent-label').textContent = selectedVendor.name;
+    showScreen('animation');
+    startDiceAnimation();
+
+    try {
+      const res = await fetch(CONFIG.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + CONFIG.anonKey,
+          'apikey': CONFIG.anonKey
+        },
+        body: JSON.stringify({ email: playerEmail, vendor_id: selectedVendor.id })
+      });
+      const data = await res.json();
+
+      // Espera mínima para que se vea la animación aunque el backend responda rápido
+      setTimeout(() => {
+        stopDiceAnimation();
+        if(!res.ok){
+          handleError(data.error);
+          return;
+        }
+        // Fija los dados en números 1-6 consistentes con el resultado real
+        // (si ganó, el número del jugador es mayor; si perdió, es menor o igual).
+        const roll = rollConsistentDice(data.won);
+        document.getElementById('dice-player').textContent = roll.player;
+        document.getElementById('dice-opponent').textContent = roll.opponent;
+
+        // Pausa breve para que el jugador vea los dados quietos antes de pasar al resultado
+        setTimeout(() => showResult(data), 1000);
+      }, 1800);
+
+    } catch (err) {
+      setTimeout(() => {
+        stopDiceAnimation();
+        handleError('network_error');
+      }, 1000);
+    }
+  });
+
+  let diceInterval = null;
+  function startDiceAnimation(){
+    const dp = document.getElementById('dice-player');
+    const dop = document.getElementById('dice-opponent');
+    diceInterval = setInterval(() => {
+      dp.textContent = Math.ceil(Math.random()*6);
+      dop.textContent = Math.ceil(Math.random()*6);
+    }, 100);
+  }
+  function stopDiceAnimation(){
+    clearInterval(diceInterval);
+    document.getElementById('dice-player').classList.remove('rolling');
+    document.getElementById('dice-opponent').classList.remove('rolling');
+  }
+
+  // Genera un par de números de dado (1-6) que sea coherente con el
+  // resultado real que decidió el backend: si ganó, jugador > oponente;
+  // si perdió, jugador <= oponente.
+  function rollConsistentDice(won){
+    let player, opponent;
+    let attempts = 0;
+    do {
+      player = 1 + Math.floor(Math.random() * 6);
+      opponent = 1 + Math.floor(Math.random() * 6);
+      attempts++;
+    } while (attempts < 50 && (won ? player <= opponent : player > opponent));
+    return { player, opponent };
+  }
+
+  // ============================================================
+  // PANTALLA 5: resultado
+  // ============================================================
+  function showResult(data){
+    const container = document.getElementById('result-content');
+    if(data.won){
+      container.innerHTML = `
+        <div class="result-title win">¡Ganaste! 🏆</div>
+        <p class="subtitle">Le ganaste el dado a ${selectedVendor.name}.</p>
+        <div class="prize-box">
+          <div>Tu premio:</div>
+          <div style="font-weight:bold; margin-top:4px;">${escapeHtml(data.product || '')}</div>
+          <div class="code">${escapeHtml(data.code || '')}</div>
+          <div class="expiry">Válido por ${escapeHtml(String(data.validity_days ?? ''))} días. Aplica solo al producto indicado, envío no incluido.</div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div class="result-title lose">No ganaste esta vez</div>
+        <p class="subtitle">${selectedVendor.name} te ganó el dado. ¡Sigue explorando nuestros productos!</p>
+      `;
+    }
+    showScreen('result');
+  }
+
+  function handleError(code){
+    const container = document.getElementById('result-content');
+    let msg = "Ocurrió un error, intenta de nuevo más tarde.";
+    if(code === 'already_played') msg = "Este correo ya participó en el reto. Solo se permite un intento por persona.";
+    if(code === 'prizes_exhausted') msg = "Por ahora se agotaron los premios disponibles. ¡Vuelve a intentarlo más tarde!";
+    container.innerHTML = `
+      <div class="result-title lose">Ups</div>
+      <p class="subtitle">${msg}</p>
+    `;
+    showScreen('result');
+  }
+
+  document.getElementById('btn-restart').addEventListener('click', () => {
+    window.location.href = CONFIG.storeUrl;
+  });
+
+  // ============================================================
+  // Utilidades
+  // ============================================================
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  function formatDate(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-MX', { year:'numeric', month:'long', day:'numeric' });
+  }
+})();
+</script>
+
+</body>
+</html>
