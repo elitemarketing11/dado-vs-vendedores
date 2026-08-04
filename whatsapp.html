@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dados NaturalShop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0510;
+    --panel: #150a24;
+    --panel-light: #1c0f30;
+    --purple: #a855f7;
+    --purple-dim: #5b2a8c;
+    --fire: #ff6a1a;
+    --fire-dim: #8a3400;
+    --red: #ff2e4d;
+    --green: #39ff6a;
+    --yellow: #ffd60a;
+    --text: #f2eaff;
+    --muted: #8a82ad;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(0deg, rgba(168,85,247,0.04) 0px, rgba(168,85,247,0.04) 1px, transparent 1px, transparent 3px),
+      radial-gradient(circle at 20% 0%, rgba(255,106,26,0.12) 0%, transparent 45%),
+      radial-gradient(circle at 80% 10%, rgba(168,85,247,0.18) 0%, transparent 50%),
+      radial-gradient(circle at 50% 20%, #241238 0%, var(--bg) 65%);
+    color: var(--text);
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    min-height: 100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 20px;
+  }
+  .pixel{ font-family: 'Press Start 2P', monospace; }
+
+  .game-container{
+    width:100%;
+    max-width: 460px;
+    background: var(--panel);
+    border: 3px solid var(--purple);
+    border-radius: 4px;
+    box-shadow: 0 0 0 4px #0a0510, 0 0 30px rgba(168,85,247,0.4), 0 0 60px rgba(255,106,26,0.12), inset 0 0 40px rgba(168,85,247,0.06);
+    overflow:hidden;
+    position:relative;
+  }
+  .game-container::before{
+    content:"";
+    position:absolute;
+    top:0; left:0; right:0;
+    height:3px;
+    background: linear-gradient(90deg, var(--purple), var(--fire), var(--purple));
+    background-size: 200% 100%;
+    animation: energyFlow 3s linear infinite;
+  }
+  @keyframes energyFlow{ 0%{ background-position:0% 0; } 100%{ background-position:200% 0; } }
+  .screen{
+    display:none;
+    padding: 34px 22px;
+    text-align:center;
+    animation: fadeIn .35s ease;
+  }
+  .screen.active{display:block;}
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  h1{
+    font-size: 18px;
+    letter-spacing: 1px;
+    color: var(--yellow);
+    text-transform: uppercase;
+    text-shadow: 0 0 8px rgba(255,214,10,0.7), 0 0 18px rgba(255,214,10,0.4), 0 0 30px rgba(168,85,247,0.3);
+    margin-bottom: 14px;
+    line-height: 1.6;
+  }
+  p.subtitle{
+    color: var(--muted);
+    margin-bottom: 22px;
+    font-size: 19px;
+    line-height: 1.4;
+  }
+
+  .intro-dice-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 22px;
+    margin: 6px 0 20px;
+  }
+
+  input[type="email"]{
+    width:100%;
+    padding: 14px;
+    border-radius: 2px;
+    border: 2px solid #262a52;
+    background:#080a1c;
+    color: var(--text);
+    font-size: 18px;
+    font-family: 'VT323', monospace;
+    margin-bottom: 18px;
+  }
+  input[type="email"]:focus{ outline:none; border-color: var(--purple); box-shadow: 0 0 10px rgba(168,85,247,0.4); }
+  input[type="email"]::placeholder{ color: #4a5080; }
+
+  .btn{
+    width:100%;
+    padding: 14px 10px;
+    border-radius: 2px;
+    border: 2px solid #8a3400;
+    background: linear-gradient(180deg, var(--fire), #b34600);
+    color: #fff;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor:pointer;
+    box-shadow: 0 4px 0 #8a3400;
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .btn:hover:not(:disabled){ filter: brightness(1.12); }
+  .btn:active:not(:disabled){ transform: translateY(4px); box-shadow: 0 0 0 #8a3400; }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn.secondary{
+    background: var(--panel-light);
+    border: 2px solid var(--purple);
+    color: var(--purple);
+    box-shadow: 0 4px 0 var(--purple-dim);
+    margin-top: 14px;
+  }
+  .btn.gold{
+    background: var(--yellow);
+    color: #2a1d00;
+    border: 2px solid #8a6b00;
+    box-shadow: 0 4px 0 #8a6b00;
+  }
+
+  .error-msg{
+    color: var(--red);
+    font-size: 16px;
+    margin-top: 8px;
+    display:none;
+  }
+
+  /* --- Selección de oponente: imagen grande + tira de miniaturas --- */
+  .fighter-preview{ margin-bottom: 14px; }
+  .preview-frame{
+    width:100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 3px solid var(--yellow);
+    box-shadow: 0 0 24px rgba(168,85,247,0.4), 0 0 36px rgba(255,106,26,0.2);
+    background: linear-gradient(135deg, #1a1e40, #080a1c);
+    position: relative;
+  }
+  .preview-frame img{
+    width:100%; height:100%;
+    object-fit: cover;
+    display:block;
+    animation: fadeIn .25s ease;
+  }
+  .preview-name{
+    margin-top: 10px;
+    font-family:'Press Start 2P', monospace;
+    font-size: 14px;
+    color: var(--yellow);
+    text-shadow: 0 0 10px rgba(255,214,10,0.6);
+    letter-spacing: 1px;
+  }
+
+  /* Móvil (por defecto): imagen arriba, tira horizontal de miniaturas abajo */
+  .selector-layout{
+    margin-bottom: 4px;
+  }
+  .vendor-strip{
+    display:flex;
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 6px 2px 14px;
+    margin-bottom: 4px;
+  }
+  .vendor-thumb{
+    flex: 0 0 auto;
+    width: 58px;
+    aspect-ratio: 3 / 4;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 2px solid #262a52;
+    cursor: pointer;
+    position: relative;
+    transition: border-color .12s ease, transform .12s ease;
+  }
+  .vendor-thumb img{
+    width:100%; height:100%;
+    object-fit: cover;
+    display:block;
+    filter: grayscale(45%) brightness(.75);
+    transition: filter .12s ease;
+  }
+  .vendor-thumb:hover{ border-color: var(--purple); transform: translateY(-2px); }
+  .vendor-thumb:hover img{ filter: grayscale(15%) brightness(.9); }
+  .vendor-thumb.selected{ border-color: var(--fire); box-shadow: 0 0 12px rgba(255,106,26,0.7); }
+  .vendor-thumb.selected img{ filter:none; }
+  .vendor-thumb .badge{
+    position:absolute; top:2px; left:2px;
+    background: var(--fire);
+    color:#fff;
+    font-family:'Press Start 2P', monospace;
+    font-size: 7px;
+    padding: 2px 3px;
+    border-radius: 2px;
+    display:none;
+  }
+  .vendor-thumb.selected .badge{ display:block; }
+
+  /* --- Pantalla VS / tirar dado --- */
+  .vs-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 12px;
+    margin: 22px 0 32px;
+  }
+  .fighter{
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 150px;
+  }
+  .fighter .vendor-avatar{
+    width:100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 4px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1a1e40, #080a1c);
+    font-size:34px;
+    border-width:3px;
+  }
+  .fighter .vendor-avatar img{
+    width:100%; height:100%;
+    object-fit: cover;
+    display:block;
+  }
+  .fighter:first-child .vendor-avatar{ border-color: var(--purple); box-shadow: 0 0 16px rgba(168,85,247,0.6); }
+  .fighter:last-child .vendor-avatar{ border-color: var(--fire); box-shadow: 0 0 16px rgba(255,106,26,0.6); }
+  .vs-text{
+    flex: 0 0 auto;
+    font-family:'Press Start 2P', monospace;
+    font-size: 20px;
+    color: var(--fire);
+    text-shadow: 0 0 10px rgba(255,106,26,0.8), 0 0 22px rgba(168,85,247,0.5);
+    animation: pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.15); } }
+  .fighter-label{ font-family:'Press Start 2P', monospace; font-size:9px; color:var(--muted); letter-spacing:.5px; }
+
+  /* --- Dados con puntos (pip dice) --- */
+  .dice-row{
+    display:flex;
+    justify-content:center;
+    gap: 34px;
+    margin: 24px 0 14px;
+  }
+  .dice-cell{ display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .die-face{
+    width: 74px; height:74px;
+    display:grid;
+    grid-template-columns: repeat(3,1fr);
+    grid-template-rows: repeat(3,1fr);
+    gap: 4px;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.5);
+  }
+  .die-face.mine{ background:#f3e9ff; border:3px solid var(--purple); }
+  .die-face.theirs{ background:#2a1508; border:3px solid var(--fire); }
+  .pip{ border-radius:50%; background:transparent; }
+  .die-face.mine .pip.on{ background:#2a0e4d; }
+  .die-face.theirs .pip.on{ background:var(--fire); box-shadow:0 0 6px var(--fire); }
+  .die-face.rolling{ animation: roll .12s linear infinite; }
+  @keyframes roll{
+    0%{ transform: rotate(0deg) scale(1); }
+    50%{ transform: rotate(12deg) scale(1.06); }
+    100%{ transform: rotate(-8deg) scale(1); }
+  }
+  .dice-label{ font-family:'Press Start 2P', monospace; font-size:9px; color:var(--muted); }
+
+  .loading{
+    font-size:16px;
+    color: var(--muted);
+    margin-top:12px;
+  }
+
+  /* --- Resultado --- */
+  .result-title{
+    font-family:'Press Start 2P', monospace;
+    font-size: 15px;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+  .stat-box{
+    background:#080a1c;
+    border: 2px solid #262a52;
+    border-radius: 4px;
+    padding: 14px;
+    margin-bottom: 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 14px;
+  }
+  .stat-box.mine{ border-color: var(--purple); box-shadow: 0 0 10px rgba(168,85,247,0.3); }
+  .stat-box.theirs{ border-color: var(--fire); box-shadow: 0 0 10px rgba(255,106,26,0.3); }
+  .stat-box.mine.win{
+    border-color: var(--green);
+    box-shadow: 0 0 16px rgba(57,255,106,0.55), 0 0 30px rgba(57,255,106,0.25);
+  }
+  .stat-label{
+    font-family:'Press Start 2P', monospace;
+    font-size: 10px;
+    text-align:left;
+    line-height:1.6;
+  }
+  .stat-box.mine .stat-label{ color: var(--purple); }
+  .stat-box.theirs .stat-label{ color: var(--fire); }
+  .stat-box.mine.win .stat-label{ color: var(--green); }
+  .die-face.mine.win{
+    border-color: var(--green);
+    box-shadow: 0 0 12px rgba(57,255,106,0.5);
+  }
+  .die-face.mine.win .pip.on{ background:#0a3d1e; }
+
+  .outcome-banner{
+    font-family:'Press Start 2P', monospace;
+    font-size: 14px;
+    margin: 18px 0 10px;
+    letter-spacing: .5px;
+  }
+  .outcome-banner.win{ color: var(--green); text-shadow: 0 0 10px rgba(57,255,106,0.7), 0 0 22px rgba(57,255,106,0.4); }
+  .outcome-banner.lose{ color: var(--muted); }
+
+  .prize-box{
+    background:#080a1c;
+    border: 2px dashed var(--yellow);
+    border-radius: 4px;
+    padding: 16px;
+    margin: 14px 0;
+    animation: fadeIn .35s ease;
+  }
+  .prize-product-img{
+    width: 100%;
+    max-width: 220px;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 2px solid var(--yellow);
+    margin: 0 auto 12px;
+    display:block;
+    background: linear-gradient(135deg, #1a1e40, #080a1c);
+  }
+  .prize-product-name{
+    font-weight:bold;
+    font-size: 19px;
+    margin-bottom: 8px;
+  }
+  .prize-price-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 18px;
+  }
+  .price-old{
+    color: var(--muted);
+    text-decoration: line-through;
+  }
+  .price-new{
+    color: var(--yellow);
+    font-weight:bold;
+    font-size: 21px;
+  }
+  .price-free{
+    color: var(--green);
+    font-weight:bold;
+    font-size: 22px;
+    text-shadow: 0 0 10px rgba(57,255,106,0.6);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .code{
+    font-family:'Press Start 2P', monospace;
+    font-size: 16px;
+    letter-spacing: 2px;
+    color: var(--yellow);
+    margin-top: 10px;
+    user-select: all;
+    word-break: break-all;
+    cursor: pointer;
+  }
+  .code-hint{
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .claim-instructions{
+    background: #ffffff;
+    color: #16181f;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.45;
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    border-left: 4px solid var(--fire);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  }
+  .btn-row{
+    display:flex;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .btn-row .btn{ flex:1; margin-top:0; }
+  .btn.btn-copy-code{
+    background: var(--panel-light);
+    border: 2px solid var(--fire);
+    color: var(--fire);
+    box-shadow: 0 4px 0 var(--fire-dim);
+    margin-top: 14px;
+  }
+  .btn-row .btn.btn-copy-code{ margin-top:0; }
+  .btn.btn-copy-code.copied,
+  .btn.copied{
+    background: var(--green);
+    color: #062b12;
+    border-color: #1a5c33;
+    box-shadow: 0 4px 0 #1a5c33;
+  }
+
+  /* --- Escritorio: imagen a la izquierda + miniaturas en columna de 2, a la derecha --- */
+  @media (min-width: 700px){
+    .game-container:has(#screen-vendor.active){
+      max-width: 640px;
+    }
+    .game-container:has(#screen-vendor.active) .selector-layout{
+      display:flex;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .game-container:has(#screen-vendor.active) .fighter-preview{
+      flex: 1;
+      min-width: 0;
+      margin-bottom: 0;
+    }
+    .game-container:has(#screen-vendor.active) .vendor-strip{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      align-content: flex-start;
+      gap: 7px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      flex: 0 0 auto;
+      width: 128px;
+      min-height: 0;
+      padding: 2px 2px 2px 0;
+    }
+    .game-container:has(#screen-vendor.active) .vendor-thumb{
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="game-container">
+
+  <!-- PANTALLA 1: correo -->
+  <div class="screen active" id="screen-email">
+    <h1 class="pixel">Tú VS Nosotros</h1>
+    <div class="intro-dice-row">
+      <div class="die-face mine" id="intro-die-player"></div>
+      <div class="vs-text">VS</div>
+      <div class="die-face theirs" id="intro-die-opponent"></div>
+    </div>
+    <p class="subtitle">Tira el dado y si nos ganas, reclama tu premio.</p>
+    <input type="email" id="email-input" placeholder="tu@correo.com" autocomplete="email">
+    <button class="btn" id="btn-continue">Continuar</button>
+    <div class="error-msg" id="email-error"></div>
+  </div>
+
+  <!-- PANTALLA 2: elegir oponente -->
+  <div class="screen" id="screen-vendor">
+    <h1 class="pixel">Elige tu Oponente</h1>
+    <div class="selector-layout">
+      <div class="fighter-preview">
+        <div class="preview-frame">
+          <img id="preview-img" src="" alt="">
+        </div>
+        <div class="preview-name" id="preview-name"></div>
+      </div>
+      <div class="vendor-strip" id="vendor-strip"></div>
+    </div>
+    <button class="btn" id="btn-fight">¡A Jugar!</button>
+  </div>
+
+  <!-- PANTALLA 3: tirar dado -->
+  <div class="screen" id="screen-roll">
+    <h1 class="pixel">¡Prepárate!</h1>
+    <div class="vs-row">
+      <div class="fighter">
+        <div class="vendor-avatar"><img src="images/player-1.jpg" alt="Tú"></div>
+        <div class="fighter-label">Tú</div>
+      </div>
+      <div class="vs-text">VS</div>
+      <div class="fighter">
+        <div class="vendor-avatar" id="opponent-avatar"></div>
+        <div class="fighter-label" id="opponent-name-label">Oponente</div>
+      </div>
+    </div>
+    <button class="btn" id="btn-roll">Tirar el Dado</button>
+  </div>
+
+  <!-- PANTALLA 4: animación -->
+  <div class="screen" id="screen-animation">
+    <h1 class="pixel">Rodando...</h1>
+    <div class="dice-row">
+      <div class="dice-cell">
+        <div class="die-face mine rolling" id="dice-player"></div>
+        <div class="dice-label">Tú</div>
+      </div>
+      <div class="dice-cell">
+        <div class="die-face theirs rolling" id="dice-opponent"></div>
+        <div class="dice-label" id="dice-opponent-label">Oponente</div>
+      </div>
+    </div>
+    <div class="loading" id="roll-status">Tirando los dados...</div>
+    <button class="btn gold" id="btn-reroll" style="display:none; margin-top:16px;">Tirar de Nuevo</button>
+  </div>
+
+  <!-- PANTALLA 5: resultado -->
+  <div class="screen" id="screen-result">
+    <h1 class="pixel">Resultado</h1>
+    <div id="result-content"></div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // ============================================================
+  // CONFIGURACIÓN — edita esto con tus datos reales
+  // (Esta es la versión para WhatsApp: usa la Edge Function
+  // "jugar_whatsapp" y códigos que NO funcionan en Shopify, solo
+  // sirven como referencia para que el vendedor aplique el premio
+  // manualmente por chat.)
+  // ============================================================
+  const CONFIG = {
+    apiUrl: "https://anlahifkfaaquplzqxuk.supabase.co/functions/v1/jugar_whatsapp",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFubGFoaWZrZmFhcXVwbHpxeHVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NjA3MjYsImV4cCI6MjEwMTMzNjcyNn0.LsPl1XWMfD3LnayOiixcF2NrngWqi41rQ5thrW_sYZo",
+    // Imágenes en la carpeta "images/" junto a este archivo (mismas que el juego de la tienda)
+    vendors: [
+      { id: "guillermofit", name: "Guillermo", avatar: "images/guillermofit.jpg" },
+      { id: "aleja", name: "Aleja", avatar: "images/aleja.jpg" },
+      { id: "nanis", name: "Nanis", avatar: "images/nanis.jpg" },
+      { id: "jeremi", name: "Jeremi", avatar: "images/jeremi.jpg" },
+      { id: "mariapaula", name: "Maria Paula", avatar: "images/mariapaula.jpg" },
+      { id: "sara", name: "Sara", avatar: "images/sara.jpg" },
+      { id: "carolina", name: "Carolina", avatar: "images/carolina.jpg" },
+      { id: "nailen", name: "Nailen", avatar: "images/nailen.jpg" },
+      { id: "leli", name: "Leli", avatar: "images/leli.jpg" }
+    ],
+
+    // Mismos 5 premios que el juego de la tienda (imagen, precio de
+    // referencia). La clave debe coincidir EXACTO con "product_name"
+    // en la tabla "prizes_wa" de Supabase.
+    products: {
+      "Gomas de Fibra Gratis": {
+        image: "images/products/gomas.jpg",
+        free: true,
+        originalPrice: 70000
+      },
+      "Green Batido Verde (mitad de precio)": {
+        image: "images/products/green.jpg",
+        originalPrice: 60000
+      },
+      "Omega 3 100 Cápsulas ASP (mitad de precio)": {
+        image: "images/products/omega3.jpg",
+        originalPrice: 75000
+      },
+      "Elite Night (mitad de precio)": {
+        image: "images/products/elite-night.jpg",
+        originalPrice: 70000
+      },
+      "Pulse Preworkout (mitad de precio)": {
+        image: "images/products/pulse.jpg",
+        originalPrice: 90000
+      }
+    }
+  };
+
+  // ============================================================
+  // Estado
+  // ============================================================
+  let selectedVendor = null;
+  let playerEmail = null;
+
+  // ============================================================
+  // Referencias
+  // ============================================================
+  const screens = {
+    email: document.getElementById('screen-email'),
+    vendor: document.getElementById('screen-vendor'),
+    roll: document.getElementById('screen-roll'),
+    animation: document.getElementById('screen-animation'),
+    result: document.getElementById('screen-result'),
+  };
+
+  function showScreen(name){
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[name].classList.add('active');
+  }
+
+  // ============================================================
+  // Bloqueo por navegador: evita que desde el mismo navegador/dispositivo
+  // se juegue de nuevo con otro correo, aunque el correo sea distinto.
+  // (Esto es adicional al bloqueo por correo que ya hace el servidor;
+  // alguien que borre los datos del navegador o use modo incógnito
+  // podría saltárselo, pero frena el abuso casual.)
+  // Usa una clave distinta a la del juego de la tienda, para que sean
+  // independientes entre sí.
+  // ============================================================
+  const LOCAL_PLAYED_KEY = 'dado_naturalshop_wa_ya_jugo';
+  const LOCAL_RESULT_KEY = 'dado_naturalshop_wa_resultado';
+
+  function hasPlayedLocally(){
+    try { return localStorage.getItem(LOCAL_PLAYED_KEY) === '1'; }
+    catch(e) { return false; }
+  }
+  function markPlayedLocally(resultData){
+    try {
+      localStorage.setItem(LOCAL_PLAYED_KEY, '1');
+      if(resultData){
+        localStorage.setItem(LOCAL_RESULT_KEY, JSON.stringify({
+          won: !!resultData.won,
+          product: resultData.product || null,
+          code: resultData.code || null
+        }));
+      }
+    }
+    catch(e) { /* si el navegador bloquea localStorage, simplemente no se guarda */ }
+  }
+  function getLocalResult(){
+    try {
+      const raw = localStorage.getItem(LOCAL_RESULT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch(e) { return null; }
+  }
+
+  // Si este navegador ya jugó antes, ni siquiera se muestra la pantalla de
+  // correo: se va directo al aviso de que ya participó (y si ganó, puede
+  // volver a ver su premio y código).
+  if(hasPlayedLocally()){
+    showAlreadyPlayedScreen();
+  }
+
+  // ============================================================
+  // Ir a WhatsApp: abre la app en su pantalla principal, SIN abrir
+  // ningún chat específico (el jugador decide a quién escribirle).
+  // En computadores sin la app instalada, usa WhatsApp Web como respaldo.
+  // ============================================================
+  function goToWhatsApp(){
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    // 'whatsapp://send?text=' abre el selector de contactos de la app
+    // (sin entrar a ningún chat específico). El esquema 'whatsapp://' solo
+    // no está registrado en muchas versiones de la app y no abre nada.
+    window.location.href = isMobile ? 'whatsapp://send?text=' : 'https://web.whatsapp.com/';
+  }
+
+  // ============================================================
+  // Dado con puntos (pip dice)
+  // ============================================================
+  const DIE_PATTERNS = {
+    1: [5],
+    2: [1,9],
+    3: [1,5,9],
+    4: [1,3,7,9],
+    5: [1,3,5,7,9],
+    6: [1,3,4,6,7,9]
+  };
+  function dieFaceInnerHTML(value){
+    const active = new Set(DIE_PATTERNS[value] || []);
+    let dots = '';
+    for(let i=1;i<=9;i++){
+      dots += `<span class="pip ${active.has(i) ? 'on' : ''}"></span>`;
+    }
+    return dots;
+  }
+  function setDie(el, value){
+    el.innerHTML = dieFaceInnerHTML(value);
+  }
+
+  // ============================================================
+  // PANTALLA 1: correo
+  // ============================================================
+  // Dados decorativos (solo ilustran la idea "Tú VS Nosotros", no son interactivos)
+  setDie(document.getElementById('intro-die-player'), 6);
+  setDie(document.getElementById('intro-die-opponent'), 3);
+
+  const emailInput = document.getElementById('email-input');
+  const emailError = document.getElementById('email-error');
+
+  document.getElementById('btn-continue').addEventListener('click', () => {
+    const value = emailInput.value.trim();
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    if(!isValid){
+      emailError.textContent = "Ingresa un correo válido.";
+      emailError.style.display = "block";
+      return;
+    }
+    emailError.style.display = "none";
+    playerEmail = value;
+    renderVendors();
+    showScreen('vendor');
+  });
+
+  // ============================================================
+  // PANTALLA 2: elegir oponente (imagen grande + tira de miniaturas)
+  // ============================================================
+  function renderVendors(){
+    const strip = document.getElementById('vendor-strip');
+    strip.innerHTML = "";
+
+    CONFIG.vendors.forEach((v, index) => {
+      const thumb = document.createElement('div');
+      thumb.className = "vendor-thumb";
+      thumb.dataset.id = v.id;
+      thumb.innerHTML = `
+        <img src="${v.avatar}" alt="${escapeHtml(v.name)}">
+        <div class="badge pixel">1P</div>
+      `;
+      thumb.addEventListener('click', () => selectVendor(v, thumb));
+      strip.appendChild(thumb);
+
+      // Selecciona el primero por defecto, igual que en la referencia
+      if(index === 0) selectVendor(v, thumb);
+    });
+  }
+
+  function selectVendor(v, thumbEl){
+    selectedVendor = v;
+    document.querySelectorAll('.vendor-thumb').forEach(t => t.classList.remove('selected'));
+    thumbEl.classList.add('selected');
+    document.getElementById('preview-img').src = v.avatar;
+    document.getElementById('preview-img').alt = v.name;
+    document.getElementById('preview-name').textContent = v.name;
+  }
+
+  document.getElementById('btn-fight').addEventListener('click', () => {
+    if(!selectedVendor) return;
+    document.getElementById('opponent-avatar').innerHTML = `<img src="${selectedVendor.avatar}" alt="${escapeHtml(selectedVendor.name)}">`;
+    document.getElementById('opponent-name-label').textContent = selectedVendor.name;
+    showScreen('roll');
+  });
+
+  // ============================================================
+  // PANTALLA 3 -> 4: tirar el dado y llamar al backend
+  // ============================================================
+  document.getElementById('btn-roll').addEventListener('click', async () => {
+    document.getElementById('dice-opponent-label').textContent = selectedVendor.name;
+    showScreen('animation');
+    startDiceAnimation();
+
+    try {
+      const res = await fetch(CONFIG.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + CONFIG.anonKey,
+          'apikey': CONFIG.anonKey
+        },
+        body: JSON.stringify({ email: playerEmail, vendor_id: selectedVendor.id })
+      });
+      const data = await res.json();
+
+      // Espera mínima para que se vea la animación aunque el backend responda rápido
+      setTimeout(async () => {
+        stopDiceAnimation();
+        if(!res.ok){
+          // Si el servidor dice que ya jugó (por correo), también lo marcamos
+          // localmente para que este navegador quede bloqueado de una vez.
+          if(data.error === 'already_played') markPlayedLocally();
+          handleError(data.error);
+          return;
+        }
+        // Se registró una jugada válida: este navegador ya no puede jugar de nuevo.
+        // Guardamos también el resultado para poder mostrar "Ver Premio" si
+        // vuelve a entrar más tarde.
+        markPlayedLocally(data);
+        // Guarda el resultado real (decidido por el backend) para usarlo
+        // en cada intento de tirada, incluyendo los reintentos manuales.
+        pendingWon = data.won;
+        pendingData = data;
+        rerollAttempts = 0;
+        await tryRoll();
+      }, 1800);
+
+    } catch (err) {
+      setTimeout(() => {
+        stopDiceAnimation();
+        handleError('network_error');
+      }, 1000);
+    }
+  });
+
+  document.getElementById('btn-reroll').addEventListener('click', async () => {
+    document.getElementById('btn-reroll').style.display = 'none';
+    await tryRoll();
+  });
+
+  let diceInterval = null;
+  function startDiceAnimation(){
+    const dp = document.getElementById('dice-player');
+    const dop = document.getElementById('dice-opponent');
+    setDie(dp, 1 + Math.floor(Math.random()*6));
+    setDie(dop, 1 + Math.floor(Math.random()*6));
+    diceInterval = setInterval(() => {
+      setDie(dp, 1 + Math.floor(Math.random()*6));
+      setDie(dop, 1 + Math.floor(Math.random()*6));
+    }, 100);
+  }
+  function stopDiceAnimation(){
+    clearInterval(diceInterval);
+    document.getElementById('dice-player').classList.remove('rolling');
+    document.getElementById('dice-opponent').classList.remove('rolling');
+  }
+
+  function sleep(ms){
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // Estado de la tirada actual (compartido entre el intento inicial y los reintentos manuales)
+  let pendingWon = null;
+  let pendingData = null;
+  let rerollAttempts = 0;
+
+  // Hace UN intento de tirada visible. Por dentro puede recalcular varias
+  // veces sin que se note (nunca se te muestra un número que contradiga el
+  // resultado real), hasta encontrar: (a) un resultado decisivo y coherente
+  // con lo que ya decidió el backend -> se muestra y avanza solo, o
+  // (b) un empate genuino -> ahí sí se detiene y pide "Tirar de Nuevo".
+  async function tryRoll(){
+    const dp = document.getElementById('dice-player');
+    const dop = document.getElementById('dice-opponent');
+    const status = document.getElementById('roll-status');
+    const rerollBtn = document.getElementById('btn-reroll');
+
+    rerollAttempts++;
+    rerollBtn.style.display = 'none';
+    dp.classList.add('rolling');
+    dop.classList.add('rolling');
+    status.textContent = rerollAttempts === 1 ? 'Tirando los dados...' : 'Rodando...';
+    await sleep(700);
+
+    // Busca, sin mostrarlo, un número que sea decisivo-y-correcto o un
+    // empate real. Los números "decisivos pero equivocados" (ej. el
+    // oponente saca más aunque el jugador debía ganar) se descartan aquí
+    // mismo, invisibles para el jugador.
+    let player, opponent, isTie, isDecisive;
+    let internalTries = 0;
+    do {
+      internalTries++;
+      player = 1 + Math.floor(Math.random() * 6);
+      opponent = 1 + Math.floor(Math.random() * 6);
+      isTie = player === opponent;
+      isDecisive = pendingWon ? player > opponent : player < opponent;
+    } while (!isTie && !isDecisive && internalTries < 300);
+
+    // Salvaguarda: si por alguna razón no se encontró nada válido, se fuerza
+    // un resultado decisivo correcto para no dejar al jugador atascado.
+    if (!isTie && !isDecisive) {
+      player = pendingWon ? 6 : 1;
+      opponent = pendingWon ? 1 : 6;
+      isTie = false;
+      isDecisive = true;
+    }
+
+    dp.classList.remove('rolling');
+    dop.classList.remove('rolling');
+    setDie(dp, player);
+    setDie(dop, opponent);
+
+    if (!isTie && isDecisive) {
+      status.textContent = '¡Resultado!';
+      setTimeout(() => showResult(pendingData, { player, opponent }), 1100);
+      return;
+    }
+
+    // Empate real: se detiene y espera a que el jugador presione "Tirar de Nuevo".
+    status.textContent = '¡Empate! Vuelve a tirar.';
+    rerollBtn.style.display = 'block';
+  }
+
+  // Resalta en verde la parte "(mitad de precio)" del nombre del producto,
+  // dejando el resto del nombre con su color normal.
+  function formatProductName(productName){
+    const name = productName || '';
+    const marker = '(mitad de precio)';
+    const idx = name.indexOf(marker);
+    if(idx === -1) return escapeHtml(name);
+    const before = name.slice(0, idx).trim();
+    return `${escapeHtml(before)} <span style="color:var(--green);">${escapeHtml(marker)}</span>`;
+  }
+
+  // Genera el HTML interno del premio (imagen, nombre, precio, código) —
+  // se usa tanto al ganar en el momento como al volver a ver un premio ya
+  // ganado anteriormente desde este mismo navegador.
+  function buildPrizeInnerHTML(productName, code){
+    const productInfo = CONFIG.products[productName] || {};
+    let priceHTML = '';
+    if(productInfo.free){
+      priceHTML = productInfo.originalPrice
+        ? `<span class="price-old">${formatCOP(productInfo.originalPrice)}</span><span class="price-free">Gratis</span>`
+        : `<span class="price-free">Gratis</span>`;
+    } else if(productInfo.originalPrice){
+      const original = Number(productInfo.originalPrice);
+      const discounted = Math.round(original / 2);
+      priceHTML = `<span class="price-old">${formatCOP(original)}</span><span class="price-new">${formatCOP(discounted)}</span>`;
+    }
+    const imgHTML = productInfo.image
+      ? `<img class="prize-product-img" src="${productInfo.image}" alt="${escapeHtml(productName || '')}">`
+      : '';
+    return `
+      ${imgHTML}
+      <div class="prize-product-name">${formatProductName(productName)}</div>
+      <div class="prize-price-row">${priceHTML}</div>
+      <div class="code" id="prize-code" title="Toca para copiar">${escapeHtml(code || '')}</div>
+      <div class="code-hint">Toca el código para copiarlo</div>
+    `;
+  }
+
+  // ============================================================
+  // PANTALLA 5: resultado
+  // ============================================================
+  function showResult(data, roll){
+    const container = document.getElementById('result-content');
+
+    const mineWinClass = data.won ? ' win' : '';
+    const statsHTML = `
+      <div class="stat-box mine${mineWinClass}">
+        <div class="stat-label">🔷 Tu número:</div>
+        <div class="die-face mine${mineWinClass}">${dieFaceInnerHTML(roll.player)}</div>
+      </div>
+      <div class="stat-box theirs">
+        <div class="stat-label">🔴 Número del<br>oponente:</div>
+        <div class="die-face theirs">${dieFaceInnerHTML(roll.opponent)}</div>
+      </div>
+    `;
+
+    if(data.won){
+      const code = data.code || '';
+
+      container.innerHTML = `
+        ${statsHTML}
+        <div class="outcome-banner win">¡FELICIDADES<br>GANASTE!</div>
+        <button class="btn gold" id="btn-reveal">Descubre tu Premio</button>
+        <div class="prize-box" id="prize-box" style="display:none;">
+          ${buildPrizeInnerHTML(data.product, code)}
+          <button class="btn btn-copy-code" id="btn-copy-1">Copiar Código</button>
+          <p class="claim-instructions">📲 Envía este código por WhatsApp para reclamar tu premio.</p>
+        </div>
+        <div class="btn-row" id="claim-actions" style="display:none;">
+          <button class="btn btn-copy-code" id="btn-copy-2">Copiar Código</button>
+          <button class="btn gold" id="btn-claim">Ir a WhatsApp</button>
+        </div>
+      `;
+
+      document.getElementById('btn-reveal').addEventListener('click', () => {
+        document.getElementById('prize-box').style.display = 'block';
+        document.getElementById('btn-reveal').style.display = 'none';
+        document.getElementById('claim-actions').style.display = 'flex';
+      });
+      document.getElementById('btn-claim').addEventListener('click', () => {
+        goToWhatsApp();
+      });
+      document.getElementById('prize-code').addEventListener('click', () => copyCode(code));
+      document.querySelectorAll('.btn-copy-code').forEach(btn => {
+        btn.addEventListener('click', () => copyCode(code));
+      });
+    } else {
+      container.innerHTML = `
+        ${statsHTML}
+        <div class="outcome-banner lose">NO GANASTE ESTA VEZ</div>
+        <p class="subtitle">${escapeHtml(selectedVendor.name)} te ganó el dado. ¡Sigue explorando nuestros productos!</p>
+        <button class="btn secondary" id="btn-restart">Volver a WhatsApp</button>
+      `;
+      document.getElementById('btn-restart').addEventListener('click', () => {
+        goToWhatsApp();
+      });
+    }
+    showScreen('result');
+  }
+
+  function handleError(code){
+    const container = document.getElementById('result-content');
+    let msg = "Ocurrió un error, intenta de nuevo más tarde.";
+    if(code === 'already_played') msg = "Este correo ya participó en el reto. Solo se permite un intento por persona.";
+    if(code === 'already_played_local') msg = "Ya jugaste, solo se permite un intento por persona.";
+    if(code === 'prizes_exhausted') msg = "Por ahora se agotaron los premios disponibles. ¡Vuelve a intentarlo más tarde!";
+    container.innerHTML = `
+      <div class="outcome-banner lose">UPS</div>
+      <p class="subtitle">${msg}</p>
+      <button class="btn secondary" id="btn-restart">Volver a WhatsApp</button>
+    `;
+    document.getElementById('btn-restart').addEventListener('click', () => {
+      goToWhatsApp();
+    });
+    showScreen('result');
+  }
+
+  // Pantalla que se muestra cuando este navegador ya jugó antes. Si el
+  // resultado guardado localmente fue una victoria, ofrece un botón para
+  // volver a ver el premio y el código.
+  function showAlreadyPlayedScreen(){
+    const result = getLocalResult();
+    const container = document.getElementById('result-content');
+    const msg = "Ya jugaste, solo se permite un intento por persona.";
+
+    const viewPrizeBtn = (result && result.won)
+      ? `<button class="btn gold" id="btn-view-prize" style="margin-bottom:10px;">Ver Premio</button>`
+      : '';
+
+    container.innerHTML = `
+      <div class="outcome-banner lose">UPS</div>
+      <p class="subtitle">${msg}</p>
+      ${viewPrizeBtn}
+      <button class="btn secondary" id="btn-restart">Volver a WhatsApp</button>
+    `;
+
+    if(result && result.won){
+      document.getElementById('btn-view-prize').addEventListener('click', () => {
+        showSavedPrize(result);
+      });
+    }
+    document.getElementById('btn-restart').addEventListener('click', () => {
+      goToWhatsApp();
+    });
+    showScreen('result');
+  }
+
+  // Muestra de nuevo el premio ya ganado (guardado en este navegador),
+  // con su código y el botón para volver a WhatsApp.
+  function showSavedPrize(result){
+    const container = document.getElementById('result-content');
+
+    container.innerHTML = `
+      <div class="outcome-banner win">TU PREMIO</div>
+      <div class="prize-box">
+        ${buildPrizeInnerHTML(result.product, result.code)}
+        <button class="btn btn-copy-code" id="btn-copy-1">Copiar Código</button>
+        <p class="claim-instructions">📲 Envía este código por WhatsApp para reclamar tu premio.</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-copy-code" id="btn-copy-2">Copiar Código</button>
+        <button class="btn gold" id="btn-claim">Ir a WhatsApp</button>
+      </div>
+    `;
+
+    document.getElementById('prize-code').addEventListener('click', () => copyCode(result.code));
+    document.querySelectorAll('.btn-copy-code').forEach(btn => {
+      btn.addEventListener('click', () => copyCode(result.code));
+    });
+    document.getElementById('btn-claim').addEventListener('click', () => {
+      goToWhatsApp();
+    });
+    showScreen('result');
+  }
+
+  // ============================================================
+  // Utilidades
+  // ============================================================
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // Formatea un número como precio en pesos colombianos, ej: 65000 -> "$65.000"
+  function formatCOP(amount){
+    return '$' + Math.round(amount).toLocaleString('es-CO');
+  }
+
+  // Copia el código al portapapeles y muestra "¡Copiado!" en todos los
+  // botones de copiar código (y vuelve a su texto normal después de un rato).
+  function copyCode(code){
+    const restore = () => {
+      document.querySelectorAll('.btn-copy-code').forEach(btn => {
+        btn.textContent = 'Copiar Código';
+        btn.classList.remove('copied');
+      });
+    };
+    const markCopied = () => {
+      document.querySelectorAll('.btn-copy-code').forEach(btn => {
+        btn.textContent = '¡Copiado!';
+        btn.classList.add('copied');
+      });
+      setTimeout(restore, 2500);
+    };
+
+    if(navigator.clipboard && window.isSecureContext){
+      navigator.clipboard.writeText(code).then(markCopied).catch(() => fallbackCopy(code, markCopied));
+    } else {
+      fallbackCopy(code, markCopied);
+    }
+  }
+
+  // Respaldo para navegadores sin acceso a la API moderna del portapapeles
+  function fallbackCopy(code, onSuccess){
+    const textarea = document.createElement('textarea');
+    textarea.value = code;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      onSuccess();
+    } catch (e) {
+      // si tampoco funciona, no hacemos nada más: el jugador puede
+      // seleccionar el código manualmente (el texto ya permite selección)
+    }
+    document.body.removeChild(textarea);
+  }
+})();
+</script>
+
+</body>
+</html>
